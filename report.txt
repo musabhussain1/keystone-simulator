@@ -1,0 +1,172 @@
+
+==============================================================================
+KEYSTONE PLACEMENT: ANALYSIS RUN
+==============================================================================
+Each customer is in the choose half or the test half, never both.
+A shelf is scored on the test half only: how many of every 100 orders it fully stocks.
+Each simulated week changes at most 10% of the shelf spaces. Weeks simulated: 12.
+The cost test of Step 2 is not applied: these datasets have no prices or costs.
+
+==============================================================================
+1  THE DATA
+==============================================================================
+Dataset                                               Orders  Products  Products per order  Single-product orders (%)
+-------------------------------------------------  ---------  --------  ------------------  -------------------------
+Instacart dataset (a US grocery delivery service)  3,346,083    49,685                10.1                        4.9
+Olist dataset (a Brazilian online marketplace)        98,666    32,951                 1.0                       96.7
+Online Retail dataset (a UK wholesaler)               19,773     3,791                26.2                        7.6
+  Instacart, shelf 10%, run 1 of 5: best sellers 29.0, Keystone 32.3  (116s)
+  Instacart, shelf 10%, run 2 of 5: best sellers 29.1, Keystone 32.6  (126s)
+  Instacart, shelf 10%, run 3 of 5: best sellers 28.5, Keystone 31.9  (137s)
+  Instacart, shelf 10%, run 4 of 5: best sellers 28.8, Keystone 32.4  (147s)
+  Instacart, shelf 10%, run 5 of 5: best sellers 28.7, Keystone 32.3  (156s)
+  Instacart, shelf 20%, run 1 of 5: best sellers 47.4, Keystone 51.3  (171s)
+  Instacart, shelf 20%, run 2 of 5: best sellers 47.6, Keystone 51.5  (189s)
+  Instacart, shelf 20%, run 3 of 5: best sellers 46.9, Keystone 50.4  (203s)
+  Instacart, shelf 20%, run 4 of 5: best sellers 47.6, Keystone 51.5  (217s)
+  Instacart, shelf 20%, run 5 of 5: best sellers 47.2, Keystone 51.3  (231s)
+
+==============================================================================
+2  MAIN RESULT: HOW THE SHELF IMPROVES WEEK BY WEEK (Instacart dataset)
+==============================================================================
+Shelf holds 10% of products (4,101 spaces). Test orders per run: about 299,960.
+Mean of 5 runs, lowest to highest in brackets. All figures per 100 test orders.
+
+Week   Swaps made  Orders fully stocked  Extra over best sellers
+-----  ----------  --------------------  -----------------------
+start           -   28.8 (28.5 to 29.1)         0.0 (0.0 to 0.0)
+1             409   31.4 (31.1 to 31.7)         2.6 (2.6 to 2.7)
+2             368   32.1 (31.7 to 32.3)         3.3 (3.1 to 3.4)
+3              94   32.2 (31.8 to 32.4)         3.4 (3.3 to 3.5)
+4              65   32.3 (31.9 to 32.5)         3.4 (3.3 to 3.6)
+5              23   32.3 (31.9 to 32.5)         3.5 (3.3 to 3.6)
+6               8   32.3 (31.9 to 32.5)         3.5 (3.3 to 3.6)
+7               4   32.3 (32.0 to 32.5)         3.5 (3.3 to 3.6)
+8               3   32.3 (31.9 to 32.5)         3.5 (3.3 to 3.6)
+9               1   32.3 (31.9 to 32.5)         3.5 (3.3 to 3.6)
+10              2   32.3 (31.9 to 32.5)         3.5 (3.3 to 3.6)
+11              1   32.3 (31.9 to 32.6)         3.5 (3.3 to 3.6)
+12              0   32.3 (31.9 to 32.6)         3.5 (3.3 to 3.6)
+
+Reading the table: with best sellers, 28.8 of every 100 test orders are fully stocked.
+After 4 weekly rounds of swaps that rises to 32.3, and after 12 weeks to 32.3.
+
+Same result for the other shelf sizes:
+Shelf            Spaces         Best sellers     Keystone, week 4    Keystone, week 12    Extra, week 12
+---------------  ------  -------------------  -------------------  -------------------  ----------------
+10% of products   4,101  28.8 (28.5 to 29.1)  32.3 (31.9 to 32.5)  32.3 (31.9 to 32.6)  3.5 (3.3 to 3.6)
+20% of products   8,201  47.3 (46.9 to 47.6)  51.1 (50.4 to 51.4)  51.2 (50.4 to 51.5)  3.8 (3.5 to 4.0)
+
+==============================================================================
+3  THREE WAYS TO FILL THE SHELF, SIDE BY SIDE (Instacart dataset)
+==============================================================================
+Orders fully stocked and order lines covered, per 100 test orders / lines (mean of 5 runs).
+
+Shelf  Method                     Orders fully stocked  Order lines covered
+-----  -------------------------  --------------------  -------------------
+10%    Best sellers                28.8 (28.5 to 29.1)                 77.8
+10%    Step-by-step whole orders   32.7 (32.3 to 33.0)                 74.6
+10%    Keystone, week 12           32.3 (31.9 to 32.6)                 75.8
+20%    Best sellers                47.3 (46.9 to 47.6)                 88.0
+20%    Step-by-step whole orders   52.2 (51.5 to 52.4)                 85.1
+20%    Keystone, week 12           51.2 (50.4 to 51.5)                 86.7
+
+Best sellers rank by sales. Step-by-step adds the products that finish the most orders, round by round.
+
+==============================================================================
+4  RESULT BY ORDER SIZE (Instacart dataset)
+==============================================================================
+Shelf holds 10% of products. Per 100 test orders of each size, mean of 5 runs.
+
+Order size       Test orders  Best sellers  Keystone  Extra
+---------------  -----------  ------------  --------  -----
+1 product             14,503          76.5      78.3   +1.8
+2 to 4 products       57,138          52.3      55.6   +3.3
+5 to 9 products       98,772          29.6      33.4   +3.8
+10 or more           129,546          12.5      16.0   +3.5
+
+==============================================================================
+5  DOES THE RESULT HOLD WITH FEWER ORDERS? (Instacart dataset)
+==============================================================================
+Same test with about 50,000 orders in each run instead of 600,000.
+
+  Instacart small, shelf 10%, run 1 of 5: best sellers 15.0, Keystone 15.8  (233s)
+  Instacart small, shelf 10%, run 2 of 5: best sellers 14.1, Keystone 15.4  (235s)
+  Instacart small, shelf 10%, run 3 of 5: best sellers 12.3, Keystone 14.4  (238s)
+  Instacart small, shelf 10%, run 4 of 5: best sellers 13.5, Keystone 14.5  (240s)
+  Instacart small, shelf 10%, run 5 of 5: best sellers 14.7, Keystone 16.6  (242s)
+
+Orders per run         Best sellers    Keystone, week 12             Extra
+--------------  -------------------  -------------------  ----------------
+600,000         28.8 (28.5 to 29.1)  32.3 (31.9 to 32.6)  3.5 (3.3 to 3.6)
+50,000          13.9 (12.3 to 15.0)  15.3 (14.4 to 16.6)  1.4 (0.8 to 2.1)
+
+==============================================================================
+6  OTHER DATASETS: DOES THE IDEA CARRY OVER?
+==============================================================================
+Shelf holds 10% of products. Every customer is in one half only. Per 100 test orders.
+
+  Olist, shelf 10%, run 1 of 5: best sellers 42.6, Keystone 42.6  (243s)
+  Olist, shelf 10%, run 2 of 5: best sellers 42.3, Keystone 42.4  (243s)
+  Olist, shelf 10%, run 3 of 5: best sellers 42.5, Keystone 42.5  (244s)
+  Olist, shelf 10%, run 4 of 5: best sellers 42.4, Keystone 42.5  (245s)
+  Olist, shelf 10%, run 5 of 5: best sellers 42.6, Keystone 42.7  (246s)
+  Online Retail, shelf 10%, run 1 of 5: best sellers 8.1, Keystone 9.8  (247s)
+  Online Retail, shelf 10%, run 2 of 5: best sellers 8.0, Keystone 9.2  (247s)
+  Online Retail, shelf 10%, run 3 of 5: best sellers 7.3, Keystone 8.8  (247s)
+  Online Retail, shelf 10%, run 4 of 5: best sellers 7.3, Keystone 9.0  (247s)
+  Online Retail, shelf 10%, run 5 of 5: best sellers 7.6, Keystone 9.0  (248s)
+
+Dataset                                            Test orders  Single-product (%)         Best sellers    Keystone, week 12             Extra
+-------------------------------------------------  -----------  ------------------  -------------------  -------------------  ----------------
+Instacart dataset (a US grocery delivery service)      299,960                 4.8  28.8 (28.5 to 29.1)  32.3 (31.9 to 32.6)  3.5 (3.3 to 3.6)
+Olist dataset (a Brazilian online marketplace)          49,350                96.7  42.5 (42.3 to 42.6)  42.5 (42.4 to 42.7)  0.0 (0.0 to 0.1)
+Online Retail dataset (a UK wholesaler)                  9,255                 7.1     7.6 (7.3 to 8.1)     9.2 (8.8 to 9.8)  1.5 (1.3 to 1.7)
+
+Orders that Keystone fully stocks and best sellers do not (gained), the reverse (lost),
+and in how many runs the difference is larger than chance would give (p below 0.05):
+
+Dataset        Gained   Lost  Runs beyond chance
+-------------  ------  -----  ------------------
+Instacart      15,199  4,761              5 of 5
+Olist             140    116              1 of 5
+Online Retail     217     76              5 of 5
+
+==============================================================================
+7  SALES FORECAST CHECK (Online Retail dataset)
+==============================================================================
+Forecast each product's sales for the next 4 weeks, then compare with what sold.
+Forecast error: total miss divided by total sold, as a percentage. Lower is better.
+
+Products scored   Count  Last week x 4  4-week average  Trained model
+---------------  ------  -------------  --------------  -------------
+All products     16,919           71.4            56.4           50.1
+fastest third     5,640           67.5            52.1           45.2
+middle third      5,639           89.1            75.8           72.1
+slowest third     5,640          103.5            93.5           92.4
+
+==============================================================================
+8  NUMBERS FOR THE REPORT
+==============================================================================
+Where                          What                                          Value (mean, lowest to highest)
+-----------------------------  --------------------------------------------  -------------------------------
+Instacart, 10% shelf           Best sellers, orders fully stocked per 100                28.8 (28.5 to 29.1)
+Instacart, 10% shelf           Keystone after 4 weeks                                    32.3 (31.9 to 32.5)
+Instacart, 10% shelf           Keystone after 12 weeks                                   32.3 (31.9 to 32.6)
+Instacart, 10% shelf           Extra after 12 weeks                                         3.5 (3.3 to 3.6)
+Instacart, 10% shelf           Step-by-step whole orders                                 32.7 (32.3 to 33.0)
+Instacart, 10% shelf           Order lines covered: best sellers / Keystone                      77.8 / 75.8
+Instacart, 20% shelf           Best sellers, orders fully stocked per 100                47.3 (46.9 to 47.6)
+Instacart, 20% shelf           Keystone after 4 weeks                                    51.1 (50.4 to 51.4)
+Instacart, 20% shelf           Keystone after 12 weeks                                   51.2 (50.4 to 51.5)
+Instacart, 20% shelf           Extra after 12 weeks                                         3.8 (3.5 to 4.0)
+Instacart, 20% shelf           Step-by-step whole orders                                 52.2 (51.5 to 52.4)
+Instacart, 20% shelf           Order lines covered: best sellers / Keystone                      88.0 / 86.7
+Olist, 10% shelf               Extra after 12 weeks                                         0.0 (0.0 to 0.1)
+Online Retail, 10% shelf       Extra after 12 weeks                                         1.5 (1.3 to 1.7)
+Instacart, 50,000 orders       Extra after 12 weeks                                         1.4 (0.8 to 2.1)
+Forecast error, all products   4-week average / trained model                                    56.4 / 50.1
+Forecast error, fastest third  4-week average / trained model                                    52.1 / 45.2
+
+Finished in 4.5 minutes.
+Saved in keystone_out/: report.txt, weekly_results.csv, FigA_bars.png, FigB_weekly_build_up.png
