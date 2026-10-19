@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>Keystone Placement Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one guided column on top (steps + button), then three areas: central centre | forward shelf + orders | results */
+:root{
+  --bg:#F2F4F4; --panel:#FFFFFF; --ink:#0F1111; --muted:#55606A; --line:#D6DADC; --soft:#ECEFF0;
+  --k:#B24A00; --kfill:#F08804; --kbg:#FFF1DE; --b:#51667A; --bfill:#6F86A0; --bbg:#E7EDF3;
+  --good:#067D62; --goodbg:#E0F3EE; --bad:#B12704; --badbg:#FBE8E3; --focus:#0B63CE;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1215; --panel:#171C20; --ink:#EDF0F1; --muted:#A2ADB6; --line:#2C353C; --soft:#1F262B;
+  --k:#FFB866; --kfill:#F08804; --kbg:#33260F; --b:#A9BBCD; --bfill:#7F97B1; --bbg:#212B35;
+  --good:#52D1AE; --goodbg:#12302A; --bad:#FF8F78; --badbg:#3B1F1A; --focus:#7DB7FF; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1215; --panel:#171C20; --ink:#EDF0F1; --muted:#A2ADB6; --line:#2C353C; --soft:#1F262B;
+  --k:#FFB866; --kfill:#F08804; --kbg:#33260F; --b:#A9BBCD; --bfill:#7F97B1; --bbg:#212B35;
+  --good:#52D1AE; --goodbg:#12302A; --bad:#FF8F78; --badbg:#3B1F1A; --focus:#7DB7FF; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
+h1{font-size:26px;line-height:1.15;margin:0;letter-spacing:-.01em}
+h2{font-size:15px;margin:0;letter-spacing:.01em}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;justify-content:space-between}
+.sub{color:var(--muted);margin-top:4px;font-size:16px}
+.badge{display:inline-flex;gap:6px;align-items:center;background:var(--kbg);color:var(--k);border:1px solid var(--kfill);border-radius:999px;padding:4px 12px;font-weight:650;font-size:13px}
+.weeks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.wk{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;text-align:left;display:flex;flex-direction:column;gap:6px}
+.wk b{font-size:13px}
+.wk .bar{height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
+.wk .bar i{display:block;height:100%;background:var(--kfill);width:0;transition:width .4s}
+.wk.now{border-color:var(--kfill);box-shadow:0 0 0 1px var(--kfill)}
+.wk.later{opacity:.6}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card.guide{border-color:var(--kfill)}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pill{font-size:13px;padding:6px 8px;border-radius:8px;background:var(--soft);color:var(--muted);border:1px solid transparent;line-height:1.25}
+.pill.on{background:var(--kbg);color:var(--k);border-color:var(--kfill);font-weight:650}
+.pill.past{color:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between}
+.say{font-size:16px;max-width:70ch}
+.btn{background:var(--kfill);color:#111;border:1px solid #C06A00;border-radius:8px;padding:10px 18px;font-weight:700;font-size:15px}
+.btn:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:600;padding:7px 12px;font-size:13px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{background:var(--panel);border:0;padding:7px 12px;font-size:13px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"].k{background:var(--kbg);color:var(--k)}
+.seg button[aria-pressed="true"].b{background:var(--bbg);color:var(--b)}
+.grid{display:grid;grid-template-columns:230px minmax(0,1fr) 300px;gap:14px;align-items:start}
+@media (max-width:1080px){.grid{grid-template-columns:1fr 1fr}.grid>.mid{grid-column:1/-1;order:-1}}
+@media (max-width:640px){.pr .co{display:none}.grid{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}.weeks .wk span{display:none}}
+.plist{display:grid;grid-template-columns:1fr;gap:4px}
+.pr{display:flex;align-items:center;gap:8px;padding:4px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:var(--panel)}
+.pr .ic{font-size:18px;width:24px;text-align:center}
+.pr .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr .co{color:var(--muted);font-variant-numeric:tabular-nums}
+.pr.on{background:var(--soft);border-color:var(--muted)}
+.pr.inn{border:2px solid var(--good);background:var(--goodbg)}
+.pr.out{border:2px solid var(--bad);background:var(--badbg)}
+@media (max-width:1080px){.plist{grid-template-columns:1fr 1fr}}
+.shelf{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+@media (max-width:640px){.shelf{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sp{border:1px solid var(--line);border-bottom:4px solid var(--line);border-radius:8px;padding:8px 6px;text-align:center;background:var(--panel);display:flex;flex-direction:column;gap:2px;align-items:center;min-width:0}
+.sp .ic{font-size:26px;line-height:1.1}
+.sp .nm{font-size:13px;font-weight:650;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sp .u{font-size:12px;color:var(--muted)}
+.sp .x{font-size:12px;font-weight:700;min-height:16px}
+.sp.weak{border-color:var(--bad);background:var(--badbg)}
+.sp.weak .x{color:var(--bad)}
+.sp.new{border-color:var(--good);background:var(--goodbg);animation:pop .6s ease-out}
+.sp.new .x{color:var(--good)}
+@keyframes pop{0%{transform:scale(.85);opacity:.3}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.sp.new{animation:none}.wk .bar i{transition:none}}
+.orders{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.od{border:1px solid var(--line);border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:4px;background:var(--panel)}
+.od.ok{border-color:var(--good);background:var(--goodbg)}
+.od.no{border-color:var(--bad);background:var(--badbg)}
+.od .h{display:flex;justify-content:space-between;font-size:12px;font-weight:700}
+.od.ok .h span:last-child{color:var(--good)} .od.no .h span:last-child{color:var(--bad)}
+.od .it{display:flex;gap:4px;flex-wrap:wrap}
+.chip{font-size:19px;line-height:1;padding:3px 4px;border-radius:6px;border:1px solid transparent}
+.chip.miss{border:2px dashed var(--bad);background:var(--panel)}
+.od .m{font-size:11px;color:var(--bad);font-weight:600;min-height:14px}
+.n{font-variant-numeric:tabular-nums}
+.big{font-size:30px;font-weight:750;line-height:1}
+.mini{font-size:12px;color:var(--muted)}
+.cmp{display:flex;flex-direction:column;gap:10px}
+.line{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:end}
+.line .bar{grid-column:1/-1;height:10px;border-radius:5px;background:var(--soft);overflow:hidden}
+.line .bar i{display:block;height:100%;transition:width .5s}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:650;font-size:12px}
+.res{font-weight:750;white-space:nowrap}
+.res.p{color:var(--good)} .res.f{color:var(--bad)}
+.tw{overflow-x:auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:640px){.two{grid-template-columns:1fr}}
+.opt{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.opt.k{border-color:var(--kfill);background:var(--kbg)} .opt.b{background:var(--bbg)}
+.hbar{display:grid;grid-template-columns:96px 1fr 28px;gap:8px;align-items:center;font-size:13px}
+.hbar .t{height:12px;background:var(--soft);border-radius:6px;overflow:hidden}
+.hbar .t i{display:block;height:100%;background:var(--bfill)}
+.hbar.w .t i{background:var(--bad)} .hbar.w{font-weight:700;color:var(--bad)}
+.note{font-size:12px;color:var(--muted)}
+.ex{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ex .chip{font-size:26px}
+details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+summary{cursor:pointer;font-weight:650}
+details ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.final{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.stat{border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:4px}
+.disc{border-left:4px solid var(--kfill);padding:8px 12px;background:var(--kbg);border-radius:0 8px 8px 0;font-size:14px}
+svg text{fill:var(--ink);font-family:inherit}
+</style>
+<div class="wrap" id="app"></div>
+<script>
+// ---- Keystone simulator logic (fictional data) ----
+const PRODUCTS = [
+  { id: 'phone', name: 'Phone', icon: '📱', cost: 2000, group: 'Phone setup' },
+  { id: 'charger', name: 'Charger', icon: '🔌', cost: 40, group: 'Phone setup' },
+  { id: 'case', name: 'Phone case', icon: '🛡️', cost: 30, group: 'Phone setup' },
+  { id: 'earbuds', name: 'Earbuds', icon: '🎧', cost: 300, group: 'Phone setup' },
+  { id: 'coffee', name: 'Coffee', icon: '☕', cost: 35, group: 'Breakfast' },
+  { id: 'milk', name: 'Milk', icon: '🥛', cost: 6, group: 'Breakfast' },
+  { id: 'bread', name: 'Bread', icon: '🍞', cost: 5, group: 'Breakfast' },
+  { id: 'eggs', name: 'Eggs', icon: '🥚', cost: 14, group: 'Breakfast' },
+  { id: 'formula', name: 'Baby formula', icon: '🍼', cost: 90, group: 'Baby' },
+  { id: 'diapers', name: 'Diapers', icon: '👶', cost: 60, group: 'Baby' },
+  { id: 'wipes', name: 'Baby wipes', icon: '🧻', cost: 15, group: 'Baby' },
+  { id: 'pasta', name: 'Pasta', icon: '🍝', cost: 8, group: 'Cooking' },
+  { id: 'sauce', name: 'Tomato sauce', icon: '🍅', cost: 9, group: 'Cooking' },
+  { id: 'cheese', name: 'Cheese', icon: '🧀', cost: 22, group: 'Cooking' },
+  { id: 'detergent', name: 'Detergent', icon: '🧴', cost: 45, group: 'Cleaning' },
+  { id: 'sponge', name: 'Sponges', icon: '🧽', cost: 7, group: 'Cleaning' },
+  { id: 'water', name: 'Water', icon: '💧', cost: 3, group: 'Everyday' },
+  { id: 'apples', name: 'Apples', icon: '🍎', cost: 12, group: 'Everyday' },
+  { id: 'batteries', name: 'Batteries', icon: '🔋', cost: 25, group: 'Everyday' },
+  { id: 'toothpaste', name: 'Toothpaste', icon: '🪥', cost: 10, group: 'Everyday' },
+];
+const BY_ID = Object.fromEntries(PRODUCTS.map((p) => [p.id, p]));
+const CFG = { SHELF: 10, UNITS: 20, CAP_PCT: 0.10, WINDOW: 4, ORDERS_PER_WEEK: 20, SCALE: 50,
+  MARGIN: 6, SPACE: 10, HOLD: 0.005 };
+CFG.CAP = Math.floor(CFG.SHELF * CFG.CAP_PCT);
+
+function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+const MISSIONS = [
+  { w: 22, items: [['milk', .85], ['bread', .85], ['eggs', .75], ['coffee', .5]] },
+  { w: 16, items: [['pasta', .9], ['sauce', .9], ['cheese', .7]] },
+  { w: 18, items: [['phone', .85], ['charger', .9], ['case', .85], ['earbuds', .25]] },
+  { w: 12, items: [['formula', .85], ['diapers', .85], ['wipes', .8]] },
+  { w: 12, items: [['detergent', .85], ['sponge', .85]] },
+  { w: 14, items: [['water', .7], ['apples', .5], ['batteries', .4], ['toothpaste', .4]] },
+];
+function makeOrders(seed) {
+  const r = rng(seed), weeks = [];
+  const tot = MISSIONS.reduce((s, m) => s + m.w, 0);
+  for (let w = 0; w < 8; w++) {            // weeks -3..0 are history, 1..4 are shown
+    const orders = [];
+    for (let i = 0; i < CFG.ORDERS_PER_WEEK; i++) {
+      let x = r() * tot, m = MISSIONS[0];
+      for (const mm of MISSIONS) { if (x < mm.w) { m = mm; break; } x -= mm.w; }
+      let o = m.items.filter(([, p]) => r() < p).map(([id]) => id);
+      if (o.length < 2) o = m.items.slice(0, 2).map(([id]) => id);
+      if (r() < 0.2) { const extra = ['water', 'apples'][Math.floor(r() * 2)]; if (!o.includes(extra)) o.push(extra); }
+      orders.push(o);
+    }
+    weeks.push(orders);
+  }
+  return weeks;
+}
+const full = (o, shelf) => o.every((p) => shelf.has(p));
+const countFull = (orders, shelf) => orders.filter((o) => full(o, shelf)).length;
+function sales(orders) { const c = {}; PRODUCTS.forEach((p) => (c[p.id] = 0)); orders.forEach((o) => o.forEach((p) => c[p]++)); return c; }
+function bestSellers(orders) { const s = sales(orders); return PRODUCTS.map((p) => p.id).sort((a, b) => s[b] - s[a] || a.localeCompare(b)).slice(0, CFG.SHELF); }
+
+// Step 1 + 2 + 3 for Keystone
+function keystoneDecide(shelfArr, hist) {
+  const shelf = new Set(shelfArr), s = sales(hist);
+  const done = hist.filter((o) => full(o, shelf));
+  const help = {}; shelfArr.forEach((p) => (help[p] = done.filter((o) => o.includes(p)).length));
+  const ranked = [...shelfArr].sort((a, b) => help[a] - help[b] || s[a] - s[b] || a.localeCompare(b));
+  const nWeak = Math.max(1, Math.round(CFG.SHELF * 0.10));
+  const weak = ranked.slice(0, nWeak);
+  const before = countFull(hist, shelf), cands = [];
+  weak.forEach((out) => PRODUCTS.forEach((q) => {
+    if (shelf.has(q.id)) return;
+    const ns = new Set(shelfArr); ns.delete(out); ns.add(q.id);
+    const net = countFull(hist, ns) - before;
+    if (net > 0) cands.push({ out, inn: q.id, net });
+  }));
+  cands.sort((a, b) => b.net - a.net || a.inn.localeCompare(b.inn));
+  const top = cands.slice(0, 3).map((c) => {
+    const perWeek = c.net / CFG.WINDOW;
+    const margin = perWeek * CFG.SCALE * CFG.MARGIN;
+    const stockValue = CFG.UNITS * BY_ID[c.inn].cost;
+    const cost = CFG.SPACE + CFG.HOLD * stockValue;
+    return { ...c, perWeek, margin, stockValue, holding: CFG.HOLD * stockValue, cost, pass: margin >= cost, ratio: c.net / cost };
+  });
+  const passing = top.filter((c) => c.pass).sort((a, b) => b.ratio - a.ratio).slice(0, CFG.CAP);
+  return { help, ranked, weak, before, top, approved: passing };
+}
+// Best sellers baseline: same cap, ranks by sales only
+function baselineDecide(shelfArr, hist) {
+  const s = sales(hist), shelf = new Set(shelfArr);
+  const out = [...shelfArr].sort((a, b) => s[a] - s[b] || a.localeCompare(b))[0];
+  const inn = PRODUCTS.map((p) => p.id).filter((p) => !shelf.has(p)).sort((a, b) => s[b] - s[a] || a.localeCompare(b))[0];
+  return s[inn] > s[out] ? { out, inn } : null;
+}
+function applySwap(shelfArr, out, inn) { return shelfArr.map((p) => (p === out ? inn : p)); }
+
+function simulate(seed) {
+  const weeks = makeOrders(seed);
+  let hist = weeks.slice(0, 4).flat();
+  let k = bestSellers(hist), b = [...k];
+  const log = [];
+  for (let w = 4; w < 8; w++) {
+    const orders = weeks[w];
+    const kf = countFull(orders, new Set(k)), bf = countFull(orders, new Set(b));
+    const entry = { week: w - 3, kf, bf, kShelf: [...k], bShelf: [...b] };
+    hist = weeks.slice(w - 3, w + 1).flat();
+    if (w < 7) {
+      const kd = keystoneDecide(k, hist); entry.kd = kd;
+      if (kd.approved.length) k = applySwap(k, kd.approved[0].out, kd.approved[0].inn);
+      const bd = baselineDecide(b, hist); entry.bd = bd;
+      if (bd) b = applySwap(b, bd.out, bd.inn);
+    }
+    log.push(entry);
+  }
+  return { weeks, log };
+}
+if (typeof module !== 'undefined') module.exports = { PRODUCTS, BY_ID, CFG, makeOrders, simulate, keystoneDecide, baselineDecide, bestSellers, countFull, sales };
+
+const SEED = 742;
+const SIM = simulate(SEED);
+const ORD = (w) => SIM.weeks[3 + w];
+const HIST = (w) => SIM.weeks.slice(w, w + 4).flat();
+const S = { week: 1, stage: 0, view: 'k', end: false };
+const $ = (id) => document.getElementById(id);
+const P = (id) => BY_ID[id];
+const ic = (id) => P(id).icon;
+const nm = (id) => P(id).name;
+const E = () => SIM.log[S.week - 1];
+const aed = (x) => 'AED ' + Math.round(x).toLocaleString('en-US');
+const decision = (e, v) => (v === 'k' ? (e.kd && e.kd.approved[0]) : (e.bd ? { out: e.bd.out, inn: e.bd.inn } : null));
+
+function score(w, shelfArr) {
+  const sh = new Set(shelfArr);
+  return ORD(w).map((o, i) => ({ n: `#${w}${String(i + 1).padStart(2, '0')}`, ids: o, miss: o.filter((p) => !sh.has(p)) }));
+}
+function totals(upToWeek, includeCurrent) {
+  let k = 0, b = 0, ks = 0, bs = 0;
+  SIM.log.forEach((e) => {
+    const wk = e.week;
+    if (wk < upToWeek || (wk === upToWeek && includeCurrent)) { k += e.kf; b += e.bf; }
+  });
+  return { k, b };
+}
+function changes() {
+  let k = 0, b = 0;
+  SIM.log.forEach((e) => {
+    const done = e.week < S.week || (e.week === S.week && S.stage >= 4);
+    if (!done) return;
+    if (e.kd && e.kd.approved.length) k++;
+    if (e.bd) b++;
+  });
+  return { k, b };
+}
+
+function header() {
+  const segs = [1, 2, 3, 4].map((w) => {
+    const now = !S.end && w === S.week && S.stage > 0, done = S.end || w < S.week;
+    const pct = done ? 100 : now ? S.stage * 25 : 0;
+    return `<div class="wk ${now ? 'now' : ''} ${(!done && !now) ? 'later' : ''}"><b>Week ${w} <span class="mini">of 4</span></b><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join('');
+  return `<div class="top"><div><h1>Keystone Placement Simulator</h1><p class="sub">Stock the products that complete the most orders.</p></div>
+  <div class="row" style="justify-content:flex-end"><span class="badge">Illustrative simulation · fictional data</span><button class="btn ghost" data-a="reset">Reset</button></div></div>
+  <div class="weeks" aria-label="Progress through four weeks">${segs}</div>`;
+}
+
+function intro() {
+  return `<div class="card guide"><h2>How it works</h2>
+  <p class="say">A same-day promise works only when <b>every product in an order</b> is at the forward site. One missing product and the order fails.</p>
+  <div class="two"><div class="opt"><b>Example order</b><div class="ex"><span class="chip">${ic('phone')}</span><span class="chip">${ic('charger')}</span><span class="chip miss">${ic('case')}</span></div>
+  <p class="note">The forward site holds the phone and the charger but not the case, so this order is <b style="color:var(--bad)">not fully stocked</b>.</p></div>
+  <div class="opt"><b>Two ways to fill the same 10 shelf spaces</b>
+  <p class="note"><span class="dot" style="background:var(--bfill)"></span><b>Best sellers</b> picks each product by how often it sells on its own.</p>
+  <p class="note"><span class="dot" style="background:var(--kfill)"></span><b>Keystone</b> picks products by how many whole orders they help complete.</p></div></div>
+  <p class="note">Both start from the same best-seller shelf and face the same orders. Each week, each may change 1 of 10 shelf spaces. All products, prices and orders here are invented.</p>
+  <div class="row"><span class="mini">Four weeks. About a minute.</span><button class="btn" data-a="next">Start week 1</button></div></div>`;
+}
+
+const STEPS = ['Orders arrive', 'Step 1: Find the weakest product', 'Step 2: Earn-Its-Space test', 'Step 3: Update the shelf'];
+function guide() {
+  const e = E(), last = S.week === 4;
+  const pills = STEPS.map((t, i) => {
+    const n = i + 1, off = last && n > 1;
+    return `<div class="pill ${S.stage === n ? 'on' : ''} ${S.stage > n ? 'past' : ''}" ${off ? 'style="opacity:.45"' : ''}>${t}</div>`;
+  }).join('');
+  const sc = score(S.week, e.kShelf).filter((o) => !o.miss.length).length;
+  let say = '', btn = '';
+  if (S.stage === 1) {
+    const same = e.kf === e.bf;
+    say = `Customers placed 20 orders in week ${S.week}. An order counts only when every product in it is on the shelf. The Keystone shelf fully stocks <b>${e.kf}</b>; the Best sellers shelf fully stocks <b>${e.bf}</b>.` +
+      (S.week === 1 ? ' Both shelves start with the same 10 best sellers, so week 1 ties.' : same ? ' The two shelves tie this week.' : e.kf > e.bf ? ` Keystone is ahead by ${e.kf - e.bf}.` : ` Best sellers is ahead by ${e.bf - e.kf}.`);
+    btn = last ? 'End week 4 and see results' : 'Next: Step 1, find the weakest product';
+  } else if (S.stage === 2) {
+    const d = e.kd;
+    say = S.view === 'k'
+      ? (d.top.length ? `Keystone counts, over the last 4 weeks, how many fully stocked orders each shelf product helps complete. <b>${nm(d.weak[0])}</b> helps complete ${d.help[d.weak[0]]}, the fewest, so it is the product to replace. <b>${nm(d.top[0].inn)}</b> would complete the most extra orders (+${d.top[0].net}).`
+        : `Keystone finds no central product that completes extra orders if it replaces <b>${nm(d.weak[0])}</b>, so no swap is proposed.`)
+      : (e.bd ? `Best sellers looks only at sales. It would replace the lowest seller, <b>${nm(e.bd.out)}</b>, with the highest seller not on the shelf, <b>${nm(e.bd.inn)}</b>.` : 'Best sellers finds no higher seller to bring in.');
+    btn = 'Next: Step 2, Earn-Its-Space test';
+  } else if (S.stage === 3) {
+    const d = e.kd, failed = d.top.filter((c) => !c.pass);
+    say = S.view === 'k'
+      ? (d.top.length ? `Every swap must earn its space: extra margin a week has to cover the shelf space and the stock held. ${failed.length ? `<b>${nm(failed[0].inn)}</b> fails: it adds only ${failed[0].net} extra order in 4 weeks, which does not pay for its expensive stock. ` : 'All candidates pass. '}The planner approves the passing swap with the most extra orders per AED.` : 'No candidate to test this week.')
+      : 'Best sellers has no cost test. It swaps on sales alone.';
+    btn = 'Next: Step 3, update the shelf';
+  } else if (S.stage === 4) {
+    const dec = decision(e, S.view);
+    say = dec ? `The weekly cap is ${CFG.CAP} change (10% of ${CFG.SHELF} shelf spaces, rounded down). <b>${nm(dec.inn)}</b> moves from the central fulfilment centre to the forward site and <b>${nm(dec.out)}</b> goes back.`
+      : `No swap passes this week, so the shelf stays as it is. The cap would allow ${CFG.CAP} change.`;
+    btn = 'End week and advance';
+  }
+  return `<div class="card guide"><div class="steps">${pills}</div><p class="say">${say}</p>
+  <div class="row"><span class="mini">${S.stage === 1 ? 'Orders arrive' : 'Step ' + (S.stage - 1) + ' of 3'}</span><button class="btn" data-a="next">${btn}</button></div></div>`;
+}
+
+function decisionPanel() {
+  const e = E(); if (S.stage < 2 || S.stage > 3) return '';
+  if (S.view === 'b') {
+    if (!e.bd) return '';
+    return `<div class="card"><h2>Best sellers decision</h2><p>Replace <b>${ic(e.bd.out)} ${nm(e.bd.out)}</b> with <b>${ic(e.bd.inn)} ${nm(e.bd.inn)}</b> because it sells more on its own. It does not check which whole orders the swap completes or what the stock costs.</p></div>`;
+  }
+  const d = e.kd;
+  if (S.stage === 2) {
+    const mx = Math.max(1, ...Object.values(d.help));
+    const bars = d.ranked.map((p, i) => `<div class="hbar ${i === 0 ? 'w' : ''}"><span>${ic(p)} ${nm(p)}</span><div class="t"><i style="width:${Math.round(d.help[p] / mx * 100)}%"></i></div><span class="n">${d.help[p]}</span></div>`).join('');
+    const cands = d.top.length ? `<table><tr><th>Replace ${ic(d.weak[0])} ${nm(d.weak[0])} with</th><th>Extra fully stocked orders (last 4 weeks)</th></tr>${d.top.map((c) => `<tr><td>${ic(c.inn)} ${nm(c.inn)}</td><td class="n">+${c.net}</td></tr>`).join('')}</table>` : '<p class="note">No central product adds a fully stocked order.</p>';
+    return `<div class="card"><h2>Step 1: fully stocked orders each shelf product helps complete</h2><div class="two"><div style="display:flex;flex-direction:column;gap:5px">${bars}<p class="note">Fully stocked orders in the last 4 weeks (80 orders) that include the product.</p></div><div class="tw">${cands}</div></div></div>`;
+  }
+  const rows = d.top.map((c) => {
+    const real = c.perWeek * CFG.SCALE;
+    return `<tr><td>${ic(c.inn)} ${nm(c.inn)}</td><td class="n">${c.net} ÷ 4 × ${CFG.SCALE} = ${Math.round(real)}</td><td class="n">${aed(c.margin)}</td><td class="n">${aed(c.cost)}<div class="note">AED ${CFG.SPACE} + 0.5% × ${CFG.UNITS} units × AED ${P(c.inn).cost}</div></td><td class="res ${c.pass ? 'p' : 'f'}">${c.pass ? '✓ Pass' : '✗ Fails'}</td></tr>`;
+  }).join('');
+  return `<div class="card"><h2>Step 2: Earn-Its-Space test</h2><p class="note">Extra orders a week × AED ${CFG.MARGIN} ≥ (shelf spaces used × AED ${CFG.SPACE}) + (0.5% × value of stock held). Same assumptions as Appendix D.1 of the submission. 1 demo order stands for ${CFG.SCALE} real orders.</p>
+  <div class="tw"><table><tr><th>Candidate</th><th>Extra orders a week</th><th>Extra margin a week</th><th>Cost a week</th><th>Result</th></tr>${rows}</table></div></div>`;
+}
+
+function leftCol() {
+  const e = E(), sh = new Set(S.view === 'k' ? e.kShelf : e.bShelf);
+  const d = decision(e, S.view), show = S.stage >= 2 && d;
+  const out = show ? d.out : null, inn = show ? d.inn : null;
+  const rows = PRODUCTS.map((p) => `<div class="pr ${sh.has(p.id) ? 'on' : ''} ${p.id === inn ? 'inn' : ''} ${(p.id === out && S.stage < 4) ? 'out' : ''}"><span class="ic">${p.icon}</span><span class="nm">${p.name}</span><span class="co">AED ${p.cost}</span></div>`).join('');
+  return `<div class="card"><h2>Central fulfilment centre</h2><p class="note">Holds every product. Shaded rows are on the forward shelf. Unit costs are invented.</p><div class="plist">${rows}</div></div>`;
+}
+
+function midCol() {
+  const e = E(), v = S.view, arr = v === 'k' ? e.kShelf : e.bShelf, dec = decision(e, v);
+  const showDec = S.stage >= 2 && dec, d = e.kd;
+  const sp = arr.map((p) => {
+    let cls = '', x = '';
+    if (showDec && p === dec.out) {
+      if (S.stage === 4) { cls = 'new'; return `<div class="sp new"><span class="ic">${ic(dec.inn)}</span><span class="nm">${nm(dec.inn)}</span><span class="u">${CFG.UNITS} units</span><span class="x">New, replaces ${nm(dec.out)}</span></div>`; }
+      cls = 'weak'; x = 'Weakest';
+    }
+    if (v === 'k' && S.stage >= 2 && !x && d.help[p] !== undefined && S.stage < 4) x = d.help[p] + ' orders';
+    return `<div class="sp ${cls}"><span class="ic">${ic(p)}</span><span class="nm">${nm(p)}</span><span class="u">${CFG.UNITS} units</span><span class="x">${x}</span></div>`;
+  }).join('');
+  const sc = score(S.week, arr);
+  const okc = sc.filter((o) => !o.miss.length).length;
+  const ords = sc.map((o) => {
+    const ok = !o.miss.length;
+    return `<div class="od ${ok ? 'ok' : 'no'}"><div class="h"><span>${o.n}</span><span>${ok ? '✓ Fully stocked' : '✗ Not fully stocked'}</span></div><div class="it">${o.ids.map((p) => `<span class="chip ${o.miss.includes(p) ? 'miss' : ''}" title="${nm(p)}">${ic(p)}</span>`).join('')}</div><div class="m">${ok ? '' : 'Missing: ' + o.miss.map(nm).join(', ')}</div></div>`;
+  }).join('');
+  return `<div class="card"><div class="row"><h2>Forward site</h2>
+    <div class="seg" role="group" aria-label="Choose shelf strategy"><button class="k" data-a="view" data-v="k" aria-pressed="${v === 'k'}">Keystone shelf</button><button class="b" data-a="view" data-v="b" aria-pressed="${v === 'b'}">Best sellers shelf</button></div></div>
+    <p class="note">${CFG.SHELF} of ${CFG.SHELF} shelf spaces used. One product per space, ${CFG.UNITS} units each. Weekly cap: 10% × ${CFG.SHELF} = ${CFG.CAP} change. With fewer than 10 spaces the cap rounds down to 0, so this demo uses 10.</p>
+    <div class="shelf">${sp}</div></div>
+    ${decisionPanel()}
+    <div class="card"><div class="row"><h2>Week ${S.week} orders</h2><span class="mini">${S.stage === 4 ? 'Scored on the shelf before the swap. ' : ''}Dashed outline = missing product</span></div><div class="orders">${ords}</div>
+    <p class="note"><b>${okc} of 20</b> orders fully stocked on the ${v === 'k' ? 'Keystone' : 'Best sellers'} shelf.</p></div>`;
+}
+
+function chart(maxW) {
+  const W = 280, H = 150, L = 24, B = 22, T = 14, gw = (W - L) / 4;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Fully stocked orders each week, Keystone against Best sellers" style="width:100%;height:auto;display:block">`;
+  [0, 10, 20].forEach((v) => {
+    const y = T + (H - T - B) * (1 - v / 20);
+    s += `<line x1="${L}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${L - 4}" y="${y + 4}" font-size="10" text-anchor="end">${v}</text>`;
+  });
+  SIM.log.forEach((e, i) => {
+    const x0 = L + i * gw + 6, bw = (gw - 16) / 2;
+    s += `<text x="${L + i * gw + gw / 2}" y="${H - 6}" font-size="10" text-anchor="middle">Wk ${e.week}</text>`;
+    if (e.week > maxW) return;
+    [['kf', 'var(--kfill)', 0], ['bf', 'var(--bfill)', 1]].forEach(([key, col, j]) => {
+      const h = (H - T - B) * (e[key] / 20), x = x0 + j * (bw + 2), y = H - B - h;
+      s += `<rect x="${x}" y="${y}" width="${bw}" height="${h}" fill="${col}" rx="2"/><text x="${x + bw / 2}" y="${y - 3}" font-size="10" font-weight="700" text-anchor="middle">${e[key]}</text>`;
+    });
+  });
+  const lg = '<div class="mini" style="display:flex;gap:14px;flex-wrap:wrap"><span><span class="dot" style="background:var(--kfill)"></span>Keystone</span><span><span class="dot" style="background:var(--bfill)"></span>Best sellers</span></div>';
+  return '<div style="max-width:520px;width:100%;display:flex;flex-direction:column;gap:6px">' + lg + s + '</svg></div>';
+}
+function rightCol() {
+  const e = E(), inc = S.stage >= 1, t = totals(S.week, inc), c = changes();
+  const rowK = `<div class="line"><span><span class="dot" style="background:var(--kfill)"></span>Keystone</span><span class="n"><b>${inc ? e.kf : '–'}</b> / 20</span><div class="bar"><i style="width:${inc ? e.kf * 5 : 0}%;background:var(--kfill)"></i></div></div>`;
+  const rowB = `<div class="line"><span><span class="dot" style="background:var(--bfill)"></span>Best sellers</span><span class="n"><b>${inc ? e.bf : '–'}</b> / 20</span><div class="bar"><i style="width:${inc ? e.bf * 5 : 0}%;background:var(--bfill)"></i></div></div>`;
+  return `<div class="card"><h2>Results</h2><p class="mini">Orders fully stocked this week</p><div class="cmp">${rowK}${rowB}</div>
+  <p class="mini">Fully stocked orders by week</p>${chart(inc ? S.week : S.week - 1)}
+  <table><tr><th></th><th>Keystone</th><th>Best sellers</th></tr>
+  <tr><td>Total so far</td><td class="n"><b>${t.k}</b></td><td class="n"><b>${t.b}</b></td></tr>
+  <tr><td>Shelf changes so far</td><td class="n">${c.k}</td><td class="n">${c.b}</td></tr></table>
+  <p class="note">Keystone and Best sellers face the same orders and the same cap.</p></div>`;
+}
+
+function finalScreen() {
+  const t = totals(4, true), c = { k: SIM.log.filter((e) => e.kd && e.kd.approved.length).length, b: SIM.log.filter((e) => e.bd).length };
+  const diff = t.k - t.b;
+  return `<div class="card guide"><h2>Results after four weeks</h2>
+  <div class="final">
+   <div class="stat"><span class="mini">Keystone</span><span class="big n">${t.k} <span class="mini">of 80 orders</span></span><span class="n">${(t.k / 80 * 100).toFixed(1)}% fully stocked</span><span class="mini">${c.k} shelf changes</span></div>
+   <div class="stat"><span class="mini">Best sellers</span><span class="big n">${t.b} <span class="mini">of 80 orders</span></span><span class="n">${(t.b / 80 * 100).toFixed(1)}% fully stocked</span><span class="mini">${c.b} shelf changes</span></div>
+   <div class="stat"><span class="mini">Difference</span><span class="big n">${diff >= 0 ? '+' : ''}${diff}</span><span>fully stocked orders for Keystone</span><span class="mini">Same shelf size, same orders, same cap</span></div></div>
+  <div class="card" style="border:0;padding:0">${chart(4)}</div>
+  <p class="say">Stocking by popularity ranks each product on its own. Keystone asks which products complete whole orders together, so one swap, such as cheese beside pasta and sauce, can finish orders the best-seller list leaves one product short. Some weeks the two tie, because a shelf can already hold the right combinations.</p>
+  <p class="disc">This is an illustrative simulation using fictional data. Results do not represent actual Amazon operations or validated UAE pilot results. The tested results are in Appendix C of the submission.</p>
+  <div class="row"><span class="mini"></span><button class="btn" data-a="reset">Replay from week 1</button></div></div>`;
+}
+
+function render() {
+  let h = header();
+  if (S.end) h += finalScreen();
+  else if (S.stage === 0) h += intro();
+  else {
+    h += guide();
+    h += `<div class="grid">${'<div class="left">' + leftCol() + '</div>'}<div class="mid" style="display:flex;flex-direction:column;gap:14px;min-width:0">${midCol()}</div>${'<div class="right">' + rightCol() + '</div>'}</div>`;
+  }
+  h += `<details><summary>Assumptions in this demo</summary><ul>
+    <li>All products, unit costs and orders are invented. Orders are fixed in advance, so every run gives the same result.</li>
+    <li>Both strategies start from the 10 best sellers of the 4 weeks before week 1 and change at most ${CFG.CAP} of ${CFG.SHELF} shelf spaces a week.</li>
+    <li>Keystone learns from the last 4 weeks of orders. The Earn-Its-Space test uses AED ${CFG.MARGIN} margin per extra fully stocked order, AED ${CFG.SPACE} per shelf space a week and 0.5% of stock value a week, the same assumptions as the submission.</li>
+    <li>1 demo order stands for ${CFG.SCALE} real orders, so the test has realistic volumes. This scale is an assumption for the demo only.</li>
+    <li>The four-week result is one example. It does not predict UAE results.</li></ul></details>`;
+  $('app').innerHTML = h;
+}
+document.addEventListener('click', (ev) => {
+  const t = ev.target.closest('[data-a]'); if (!t) return;
+  const a = t.dataset.a;
+  if (a === 'reset') { S.week = 1; S.stage = 0; S.view = 'k'; S.end = false; }
+  else if (a === 'view') { S.view = t.dataset.v; }
+  else if (a === 'next') {
+    if (S.stage === 0) S.stage = 1;
+    else if (S.week === 4 && S.stage === 1) S.end = true;
+    else if (S.stage < 4) S.stage++;
+    else { S.week++; S.stage = 1; }
+    S.view = S.view;
+  }
+  render();
+  if (a !== 'view') window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+render();
+</script>
+
+</body></html>
