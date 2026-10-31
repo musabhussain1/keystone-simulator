@@ -5,18 +5,21 @@
 <style>
 /* Layout: one guided column on top (steps + button), then three areas: central centre | forward shelf + orders | results */
 :root{
-  --bg:#F2F4F4; --panel:#FFFFFF; --ink:#0F1111; --muted:#55606A; --line:#D6DADC; --soft:#ECEFF0;
-  --k:#B24A00; --kfill:#F08804; --kbg:#FFF1DE; --b:#51667A; --bfill:#6F86A0; --bbg:#E7EDF3;
-  --good:#067D62; --goodbg:#E0F3EE; --bad:#B12704; --badbg:#FBE8E3; --focus:#0B63CE;
+  --bg:#EAEDED; --panel:#FFFFFF; --ink:#0F1111; --muted:#565959; --line:#D5D9D9; --soft:#F0F2F2;
+  --band:#232F3E; --band2:#37475A; --btn:#FFD814; --btnb:#FCD200;
+  --k:#B35C00; --kfill:#FF9900; --kbg:#FFF4E0; --b:#0F5E9B; --bfill:#146EB4; --bbg:#E8F1F8;
+  --good:#007600; --goodbg:#E3F4E3; --bad:#B12704; --badbg:#FBE8E3; --focus:#007185;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0E1215; --panel:#171C20; --ink:#EDF0F1; --muted:#A2ADB6; --line:#2C353C; --soft:#1F262B;
-  --k:#FFB866; --kfill:#F08804; --kbg:#33260F; --b:#A9BBCD; --bfill:#7F97B1; --bbg:#212B35;
-  --good:#52D1AE; --goodbg:#12302A; --bad:#FF8F78; --badbg:#3B1F1A; --focus:#7DB7FF; color-scheme:dark}}
+  --band:#131A22; --band2:#232F3E; --btn:#FFD814; --btnb:#FCD200;
+  --k:#FFB866; --kfill:#FF9900; --kbg:#33260F; --b:#8EC3EE; --bfill:#3C8DD0; --bbg:#16283A;
+  --good:#52D1AE; --goodbg:#12302A; --bad:#FF8F78; --badbg:#3B1F1A; --focus:#7DD3E0; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0E1215; --panel:#171C20; --ink:#EDF0F1; --muted:#A2ADB6; --line:#2C353C; --soft:#1F262B;
-  --k:#FFB866; --kfill:#F08804; --kbg:#33260F; --b:#A9BBCD; --bfill:#7F97B1; --bbg:#212B35;
-  --good:#52D1AE; --goodbg:#12302A; --bad:#FF8F78; --badbg:#3B1F1A; --focus:#7DB7FF; color-scheme:dark}
+  --band:#131A22; --band2:#232F3E; --btn:#FFD814; --btnb:#FCD200;
+  --k:#FFB866; --kfill:#FF9900; --kbg:#33260F; --b:#8EC3EE; --bfill:#3C8DD0; --bbg:#16283A;
+  --good:#52D1AE; --goodbg:#12302A; --bad:#FF8F78; --badbg:#3B1F1A; --focus:#7DD3E0; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0}
 .wrap{max-width:1240px;margin:0 auto;padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
@@ -25,27 +28,31 @@ h2{font-size:15px;margin:0;letter-spacing:.01em}
 p{margin:0}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,summary:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;justify-content:space-between}
-.sub{color:var(--muted);margin-top:4px;font-size:16px}
-.badge{display:inline-flex;gap:6px;align-items:center;background:var(--kbg);color:var(--k);border:1px solid var(--kfill);border-radius:999px;padding:4px 12px;font-weight:650;font-size:13px}
+.top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;background:var(--band);color:#fff;border-radius:12px;padding:14px 18px;border-bottom:4px solid var(--kfill)}
+.top h1{color:#fff}
+.sub{color:#D5D9D9;margin-top:4px;font-size:16px}
+.badge{display:inline-flex;gap:6px;align-items:center;background:var(--band2);color:#fff;border:1px solid var(--kfill);border-radius:999px;padding:4px 12px;font-weight:650;font-size:13px}
+.top .btn.ghost{color:#fff;border-color:#8795A5}
 .weeks{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.wk{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;text-align:left;display:flex;flex-direction:column;gap:6px}
+.wk{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;text-align:left;display:flex;flex-direction:column;gap:6px;font:inherit;color:inherit;cursor:pointer}
+.wk:hover{border-color:var(--kfill)}
 .wk b{font-size:13px}
 .wk .bar{height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
 .wk .bar i{display:block;height:100%;background:var(--kfill);width:0;transition:width .4s}
 .wk.now{border-color:var(--kfill);box-shadow:0 0 0 1px var(--kfill)}
 .wk.later{opacity:.6}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.card.guide{border-color:var(--kfill)}
+.card.guide{border-color:var(--kfill);border-width:2px}
 .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .pill{font-size:13px;padding:6px 8px;border-radius:8px;background:var(--soft);color:var(--muted);border:1px solid transparent;line-height:1.25}
 .pill.on{background:var(--kbg);color:var(--k);border-color:var(--kfill);font-weight:650}
 .pill.past{color:var(--ink)}
 .row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between}
 .say{font-size:16px;max-width:70ch}
-.btn{background:var(--kfill);color:#111;border:1px solid #C06A00;border-radius:8px;padding:10px 18px;font-weight:700;font-size:15px}
+.btn{background:var(--btn);color:#0F1111;border:1px solid var(--btnb);border-radius:999px;padding:10px 20px;font-weight:700;font-size:15px}
 .btn:hover{filter:brightness(1.06)}
-.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:600;padding:7px 12px;font-size:13px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);font-weight:600;padding:7px 14px;font-size:14px}
+.btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{background:var(--panel);border:0;padding:7px 12px;font-size:13px;font-weight:600;color:var(--muted)}
 .seg button[aria-pressed="true"].k{background:var(--kbg);color:var(--k)}
@@ -278,7 +285,7 @@ function header() {
   const segs = [1, 2, 3, 4].map((w) => {
     const now = !S.end && w === S.week && S.stage > 0, done = S.end || w < S.week;
     const pct = done ? 100 : now ? S.stage * 25 : 0;
-    return `<div class="wk ${now ? 'now' : ''} ${(!done && !now) ? 'later' : ''}"><b>Week ${w} <span class="mini">of 4</span></b><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+    return `<button class="wk ${now ? 'now' : ''} ${(!done && !now) ? 'later' : ''}" data-a="goweek" data-w="${w}" aria-label="Go to week ${w}"><b>Week ${w} <span class="mini">of 4</span></b><div class="bar"><i style="width:${pct}%"></i></div></button>`;
   }).join('');
   return `<div class="top"><div><h1>Keystone Placement Simulator</h1><p class="sub">Stock the products that complete the most orders.</p></div>
   <div class="row" style="justify-content:flex-end"><span class="badge">Illustrative simulation · fictional data</span><button class="btn ghost" data-a="reset">Reset</button></div></div>
@@ -331,7 +338,7 @@ function guide() {
     btn = 'End week and advance';
   }
   return `<div class="card guide"><div class="steps">${pills}</div><p class="say">${say}</p>
-  <div class="row"><span class="mini">${S.stage === 1 ? 'Orders arrive' : 'Step ' + (S.stage - 1) + ' of 3'}</span><button class="btn" data-a="next">${btn}</button></div></div>`;
+  <div class="row"><span class="mini">${S.stage === 1 ? 'Orders arrive' : 'Step ' + (S.stage - 1) + ' of 3'}</span><div class="btns"><button class="btn ghost" data-a="prev">← Back</button><button class="btn" data-a="next">${btn}</button></div></div></div>`;
 }
 
 function decisionPanel() {
@@ -432,7 +439,7 @@ function finalScreen() {
   <div class="card" style="border:0;padding:0">${chart(4)}</div>
   <p class="say">Stocking by popularity ranks each product on its own. Keystone asks which products complete whole orders together, so one swap, such as cheese beside pasta and sauce, can finish orders the best-seller list leaves one product short. Some weeks the two tie, because a shelf can already hold the right combinations.</p>
   <p class="disc">This is an illustrative simulation using fictional data. Results do not represent actual Amazon operations or validated UAE pilot results. The tested results are in Appendix C of the submission.</p>
-  <div class="row"><span class="mini"></span><button class="btn" data-a="reset">Replay from week 1</button></div></div>`;
+  <div class="row"><span class="mini">Use the week tabs above to look at any week again.</span><div class="btns"><button class="btn ghost" data-a="prev">← Back to week 4</button><button class="btn" data-a="reset">Replay from week 1</button></div></div></div>`;
 }
 
 function render() {
@@ -456,6 +463,13 @@ document.addEventListener('click', (ev) => {
   const a = t.dataset.a;
   if (a === 'reset') { S.week = 1; S.stage = 0; S.view = 'k'; S.end = false; }
   else if (a === 'view') { S.view = t.dataset.v; }
+  else if (a === 'goweek') { S.week = +t.dataset.w; S.stage = 1; S.end = false; }
+  else if (a === 'prev') {
+    if (S.end) { S.end = false; S.week = 4; S.stage = 1; }
+    else if (S.stage > 1) S.stage--;
+    else if (S.week > 1) { S.week--; S.stage = (S.week === 4 ? 1 : 4); }
+    else S.stage = 0;
+  }
   else if (a === 'next') {
     if (S.stage === 0) S.stage = 1;
     else if (S.week === 4 && S.stage === 1) S.end = true;
@@ -465,6 +479,11 @@ document.addEventListener('click', (ev) => {
   }
   render();
   if (a !== 'view') window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+document.addEventListener('keydown', (ev) => {
+  if (ev.target.closest('input,textarea,select')) return;
+  const btn = document.querySelector(ev.key === 'ArrowRight' ? '[data-a="next"]' : ev.key === 'ArrowLeft' ? '[data-a="prev"]' : '#none');
+  if (btn) { ev.preventDefault(); btn.click(); }
 });
 render();
 </script>
